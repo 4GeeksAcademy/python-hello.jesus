@@ -14,6 +14,24 @@ $ python main.py
 
 You can create and include as many python files (a.k.a. modules) as you want using the import statements.
 
+## Inventario Suministros Carla
+
+Este proyecto incluye un agente de inventario con interfaz web. Para arrancarlo necesitas **dos procesos** corriendo al mismo tiempo:
+
+**Terminal 1 — API (FastAPI)**
+```bash
+uvicorn api.app:app --reload
+```
+
+**Terminal 2 — Servidor web + agente (Flask)**
+```bash
+python server.py
+```
+
+Luego abre `http://localhost:3000` en tu navegador.
+
+> Asegúrate de tener un archivo `.env` con tu `GROQ_API_KEY` antes de arrancar.
+
 ## Requirements
 
 Make sure you have Python installed in your computer. We strongly recommend [installing Python through Pyenv ](https://4geeks.com/how-to/what-is-pyenv-and-how-to-install-pyenv) to avoid version conflicts in the future.
