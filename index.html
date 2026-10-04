@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario — Suministros Carla</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+
+    header {
+      background: #2563eb;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    header h1 { font-size: 1.4rem; }
+    header span { font-size: 0.9rem; opacity: 0.8; }
+
+    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.2rem 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card .label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card .value { font-size: 2rem; font-weight: 700; margin-top: 0.2rem; }
+    .card.alert .value { color: #dc2626; }
+    .card.ok .value { color: #16a34a; }
+
+    .panel {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header h2 { font-size: 1rem; font-weight: 600; }
+    .panel-body { padding: 1.5rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; padding: 0.6rem 1rem; background: #f8fafc; color: #555; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+    td { padding: 0.7rem 1rem; border-bottom: 1px solid #f1f5f9; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+    .badge-yellow { background: #fef9c3; color: #ca8a04; }
+
+    .actions { display: flex; gap: 0.4rem; }
+    button {
+      padding: 0.3rem 0.7rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .btn-in { background: #dcfce7; color: #15803d; }
+    .btn-in:hover { background: #bbf7d0; }
+    .btn-out { background: #fee2e2; color: #b91c1c; }
+    .btn-out:hover { background: #fecaca; }
+    .btn-primary { background: #2563eb; color: white; padding: 0.5rem 1.2rem; font-size: 0.9rem; border-radius: 8px; }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.85rem; font-weight: 500; color: #555; }
+    input {
+      padding: 0.5rem 0.8rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus { border-color: #2563eb; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1e293b;
+      color: white;
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    .empty { text-align: center; padding: 2rem; color: #aaa; font-size: 0.9rem; }
+
+    /* Chat */
+    .chat-box {
+      height: 360px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .bubble {
+      max-width: 75%;
+      padding: 0.6rem 0.9rem;
+      border-radius: 16px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .bubble.user {
+      background: #2563eb;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.bot {
+      background: white;
+      border: 1px solid #e5e7eb;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .bubble.typing { color: #aaa; font-style: italic; }
+    .chat-input-row { display: flex; gap: 0.5rem; }
+    .chat-input-row input {
+      flex: 1;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .chat-input-row input:focus { border-color: #2563eb; }
+    .btn-reset { background: #f1f5f9; color: #555; padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.8rem; }
+    .btn-reset:hover { background: #e2e8f0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Suministros Carla</h1>
+    <span>Panel de Inventario</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Tarjetas resumen -->
+  <div class="cards">
+    <div class="card ok">
+      <div class="label">Total productos</div>
+      <div class="value" id="total-productos">—</div>
+    </div>
+    <div class="card alert">
+      <div class="label">Alertas de stock</div>
+      <div class="value" id="total-alertas">—</div>
+    </div>
+  </div>
+
+  <!-- Tabla de inventario -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Inventario completo</h2>
+      <button class="btn-primary" onclick="loadInventory()">↻ Actualizar</button>
+    </div>
+    <div class="panel-body">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Unidad</th>
+            <th>Mínimo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-inventario">
+          <tr><td colspan="6" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Agregar producto -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Agregar producto</h2>
+    </div>
+    <div class="panel-body">
+      <form id="form-producto" onsubmit="agregarProducto(event)">
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="p-nombre" placeholder="Ej: Café molido" required />
+        </div>
+        <div class="form-group">
+          <label>Cantidad inicial</label>
+          <input type="number" id="p-cantidad" placeholder="0" step="any" required />
+        </div>
+        <div class="form-group">
+          <label>Unidad</label>
+          <input type="text" id="p-unidad" placeholder="kg, litros, cajas…" required />
+        </div>
+        <div class="form-group">
+          <label>Umbral mínimo (alerta)</label>
+          <input type="number" id="p-minimo" placeholder="10" step="any" />
+        </div>
+        <div class="form-group full" style="justify-content:flex-end; flex-direction:row">
+          <button type="submit" class="btn-primary">+ Agregar producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Chat con el agente -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Chat con el Asistente</h2>
+      <button class="btn-reset" onclick="resetChat()">↺ Nueva conversación</button>
+    </div>
+    <div class="panel-body">
+      <div class="chat-box" id="chat-box">
+        <div class="bubble bot">¡Hola Carla! Soy tu asistente de inventario. ¿En qué te puedo ayudar hoy?</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ej: ¿qué productos están por agotarse?" onkeydown="if(event.key==='Enter') sendMessage()" />
+        <button class="btn-primary" onclick="sendMessage()">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "/api";
+
+  function showToast(msg, color = "#1e293b") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.background = color;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 3000);
+  }
+
+  async function loadInventory() {
+    try {
+      const [invRes, alertRes] = await Promise.all([
+        fetch(`${API}/inventory`),
+        fetch(`${API}/inventory/alerts`)
+      ]);
+      const inv = await invRes.json();
+      const alerts = await alertRes.json();
+
+      const alertIds = new Set(alerts.alerts.map(a => a.id));
+      const productos = inv.products;
+
+      document.getElementById("total-productos").textContent = productos.length;
+      document.getElementById("total-alertas").textContent = alerts.total;
+
+      const tbody = document.getElementById("tabla-inventario");
+      if (productos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">No hay productos registrados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = productos.map(p => {
+        const bajo = alertIds.has(p.id);
+        const badge = bajo
+          ? `<span class="badge badge-red">Stock bajo</span>`
+          : `<span class="badge badge-green">OK</span>`;
+        return `
+          <tr>
+            <td>${p.name}</td>
+            <td><strong>${p.quantity}</strong></td>
+            <td>${p.unit}</td>
+            <td>${p.min_threshold}</td>
+            <td>${badge}</td>
+            <td>
+              <div class="actions">
+                <button class="btn-in" onclick="updateStock('${p.id}', '${p.name}', 1)">+ Entrada</button>
+                <button class="btn-out" onclick="updateStock('${p.id}', '${p.name}', -1)">− Salida</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+    } catch (e) {
+      document.getElementById("tabla-inventario").innerHTML =
+        `<tr><td colspan="6" class="empty" style="color:#dc2626">No se puede conectar con la API. ¿Está corriendo en el puerto 8000?</td></tr>`;
+    }
+  }
+
+  async function updateStock(id, nombre, defaultDelta) {
+    const delta = parseFloat(prompt(`¿Cuántas unidades quieres ${defaultDelta > 0 ? "agregar a" : "retirar de"} "${nombre}"?`));
+    if (isNaN(delta) || delta === 0) return;
+    const finalDelta = defaultDelta > 0 ? Math.abs(delta) : -Math.abs(delta);
+    try {
+      const res = await fetch(`${API}/inventory/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delta: finalDelta })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.detail || "Error", "#dc2626"); return; }
+      showToast(`✓ Stock de "${nombre}" actualizado`, "#16a34a");
+      loadInventory();
+    } catch { showToast("Error de conexión", "#dc2626"); }
+  }
+
+  async function agregarProducto(e) {
+    e.preventDefault();
+    const payload = {
+      name: document.getElementById("p-nombre").value.trim(),
+      quantity: parseFloat(document.getElementById("p-cantidad").value),
+      unit: document.getElementById("p-unidad").value.trim(),
+      min_threshold: parseFloat(document.getElementById("p-minimo").value) || 10
+    };
+    try {
+      const res = await fetch(`${API}/inventory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.detail || "Error", "#dc2626"); return; }
+      showToast(`✓ "${payload.name}" agregado al inventario`, "#16a34a");
+      document.getElementById("form-producto").reset();
+      loadInventory();
+    } catch { showToast("Error de conexión", "#dc2626"); }
+  }
+
+  // ── Chat ──
+  async function sendMessage() {
+    const input = document.getElementById("chat-input");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+
+    appendBubble(text, "user");
+    const typing = appendBubble("Escribiendo...", "bot typing");
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      typing.remove();
+      if (data.error) {
+        appendBubble("Error: " + data.error, "bot");
+      } else {
+        appendBubble(data.reply, "bot");
+        loadInventory();
+      }
+    } catch {
+      typing.remove();
+      appendBubble("No se pudo conectar con el asistente.", "bot");
+    }
+  }
+
+  function appendBubble(text, cls) {
+    const box = document.getElementById("chat-box");
+    const div = document.createElement("div");
+    div.className = "bubble " + cls;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  async function resetChat() {
+    await fetch("/chat/reset", { method: "POST" });
+    const box = document.getElementById("chat-box");
+    box.innerHTML = `<div class="bubble bot">¡Hola Carla! Soy tu asistente de inventario. ¿En qué te puedo ayudar hoy?</div>`;
+  }
+
+  loadInventory();
+</script>
+</body>
+</html>
